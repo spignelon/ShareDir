@@ -4,6 +4,17 @@ import qrcode
 from flask import Flask, send_file, send_from_directory, request, abort, jsonify, render_template_string
 import diceware
 from argparse import ArgumentParser, Namespace
+from time import time
+from datetime import timedelta
+
+# Dictionary to store failed attempts
+failed_attempts = {}
+blacklist = {}
+
+# Thresholds
+MAX_FAILED_ATTEMPTS = 10
+TIME_WINDOW = 60  # 1 minute
+BLACKLIST_DURATION = 4 * 60 * 60  # 4 hours in seconds
 
 def generate_passphrase(num_words):
     # Create an options object
@@ -32,6 +43,32 @@ def get_lan_ip():
         s.close()
     return ip
 
+# checking if IP is blacklisted and removing old entries
+def is_blacklisted(ip):
+    if ip in blacklist:
+        if time() < blacklist[ip]:
+            return True
+        else:
+            del blacklist[ip]
+    return False
+
+def log_failed_attempt(ip):
+    # Log failed attempt with a timestamp
+    now = time()
+    if ip not in failed_attempts:
+        failed_attempts[ip] = []
+    
+    # Removing old entries
+    failed_attempts[ip] = [attempt for attempt in failed_attempts[ip] if now - attempt < TIME_WINDOW]
+    
+    # Add current attempt
+    failed_attempts[ip].append(now)
+
+    # Check if it exceeds the max allowed attempts
+    if len(failed_attempts[ip]) >= MAX_FAILED_ATTEMPTS:
+        blacklist[ip] = now + BLACKLIST_DURATION
+        del failed_attempts[ip]
+
 def create_http_server(path, passphrase):
     app = Flask(__name__)
     is_file = os.path.isfile(path)
@@ -39,8 +76,15 @@ def create_http_server(path, passphrase):
     @app.route('/', defaults={'req_path': ''})
     @app.route('/<path:req_path>')
     def dir_listing(req_path):
+        ip = request.remote_addr    
+        
+        if is_blacklisted(ip):
+            print(f"IP {ip} is blacklisted.")
+            return jsonify({"error": "Too many failed attempts. You are blacklisted for 4 hours."}), 403
+        
         if request.args.get('passphrase') != passphrase:
             if request.args.get('passphrase') is not None:
+                log_failed_attempt(ip)
                 print("Incorrect passphrase. The correct passphrase is:", passphrase, "AND NOT", request.args.get('passphrase'))
             abort(403)
 
