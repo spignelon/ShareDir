@@ -39,9 +39,7 @@ def create_http_server(directory, passphrase):
     @app.route('/<path:req_path>')
     def dir_listing(req_path):
         if request.args.get('passphrase') != passphrase:
-            if request.args.get('passphrase') is None:
-                print("No passphrase provided")
-            else:
+            if request.args.get('passphrase') is not None:
                 print("Incorrect passphrase. The correct passphrase is:", passphrase, "AND NOT", request.args.get('passphrase'))
             abort(403)
 
@@ -54,9 +52,10 @@ def create_http_server(directory, passphrase):
         if os.path.isfile(abs_path):
             return send_from_directory(directory, req_path)
 
-        # Show directory contents
-        files = os.listdir(abs_path)
-        file_links = [f'{file}' for file in files]
+        # Split files and directories into separate lists
+        items = os.listdir(abs_path)
+        directories = sorted([item for item in items if os.path.isdir(os.path.join(abs_path, item))])
+        files = sorted([item for item in items if os.path.isfile(os.path.join(abs_path, item))])
 
         return render_template_string("""
         <!DOCTYPE html>
@@ -138,17 +137,21 @@ def create_http_server(directory, passphrase):
         
             <!-- Directory Listing -->
             <ul>        
-            {% for file in files %}
-                <li>
-                    {% if '.' in file %}
+                <!-- Display directories first -->
+                {% for directory in directories %}
+                    <li>
+                        <span class="icon">📁</span>
+                        <a class="folder" href="{{ '/' + req_path + '/' + directory if req_path else '/' + directory }}?passphrase={{ passphrase }}">{{ directory }}</a>
+                    </li>
+                {% endfor %}
+                
+                <!-- Display files after directories -->
+                {% for file in files %}
+                    <li>
                         <span class="icon">📄</span>
                         <a class="file" href="{{ '/' + req_path + '/' + file if req_path else '/' + file }}?passphrase={{ passphrase }}">{{ file }}</a>
-                    {% else %}
-                        <span class="icon">📁</span>
-                        <a class="folder" href="{{ '/' + req_path + '/' + file if req_path else '/' + file }}?passphrase={{ passphrase }}">{{ file }}</a>
-                    {% endif %}
-                </li>
-            {% endfor %}
+                    </li>
+                {% endfor %}
             </ul>
 
             <!-- JavaScript for Dark Mode Toggle -->
@@ -175,7 +178,7 @@ def create_http_server(directory, passphrase):
             </script>
         </body>
         </html>
-        """, req_path=req_path, files=file_links, passphrase=passphrase)
+        """, req_path=req_path, directories=directories, files=files, passphrase=passphrase)
 
     return app
 
