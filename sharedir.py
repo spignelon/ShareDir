@@ -1,14 +1,14 @@
 import os
 import socket
 import qrcode
-from flask import Flask, send_from_directory, request, abort, jsonify, render_template_string
+from flask import Flask, send_file, send_from_directory, request, abort, jsonify, render_template_string
 import diceware
-from argparse import Namespace
+from argparse import ArgumentParser, Namespace
 
-def generate_passphrase():
+def generate_passphrase(num_words):
     # Create an options object
     options = Namespace()
-    options.num = 4
+    options.num = num_words
     options.delimiter = '-'
     options.specials = False
     options.caps = False    
@@ -32,8 +32,9 @@ def get_lan_ip():
         s.close()
     return ip
 
-def create_http_server(directory, passphrase):
+def create_http_server(path, passphrase):
     app = Flask(__name__)
+    is_file = os.path.isfile(path)
 
     @app.route('/', defaults={'req_path': ''})
     @app.route('/<path:req_path>')
@@ -43,14 +44,19 @@ def create_http_server(directory, passphrase):
                 print("Incorrect passphrase. The correct passphrase is:", passphrase, "AND NOT", request.args.get('passphrase'))
             abort(403)
 
-        abs_path = os.path.join(directory, req_path)
+        if is_file:
+            # Serve the single file
+            if req_path and req_path != os.path.basename(path):
+                return jsonify({"error": "Path not found"}), 404
+            return send_file(path)
+        else:
+            # Serve the directory listing
+            abs_path = os.path.join(path, req_path)
+            if not os.path.exists(abs_path):
+                return jsonify({"error": "Path not found"}), 404
+            if os.path.isfile(abs_path):
+                return send_from_directory(path, req_path)
 
-        if not os.path.exists(abs_path):
-            print(f"Path not found: {abs_path}")        
-            return jsonify({"error": "Path not found"}), 404
-
-        if os.path.isfile(abs_path):
-            return send_from_directory(directory, req_path)
 
         # Split files and directories into separate lists
         items = os.listdir(abs_path)
@@ -195,17 +201,22 @@ def display_qr_code(url):
     img = qr.make_image(fill='black', back_color='white')
     qr.print_ascii()
 
-if __name__ == "__main__":
-    directory = input("Enter the directory to be served: ")
-
-    if not os.path.isdir(directory):
-        print("The provided path is not a directory.")
+def main():
+    parser = ArgumentParser(description="Share a directory or file over HTTP.")
+    parser.add_argument("path", help="Path to the directory or file to be shared (relative or absolute).")
+    parser.add_argument("-p", "--passphrase-length", type=int, default=4, help="Number of words in the passphrase (default: 4).")
+    args = parser.parse_args()
+    
+    # Resolving absolute path
+    shared_path = os.path.abspath(args.path)
+    if not os.path.exists(shared_path):
+        print(f"The provided path '{shared_path}' does not exist.")
         exit(1)
 
-    passphrase = generate_passphrase()
+    passphrase = generate_passphrase(args.passphrase_length)
     print(f"Generated passphrase: {passphrase}")
 
-    ip_address = get_lan_ip()  # Automatically detect LAN IP address
+    ip_address = get_lan_ip()  # Detect LAN IP address
     http_port = 44447
     url = f"http://{ip_address}:{http_port}/?passphrase={passphrase}"
     print(f"Access URL: {url}")
@@ -214,5 +225,8 @@ if __name__ == "__main__":
     display_qr_code(url)
 
     # Create and start the HTTP server
-    http_server = create_http_server(directory, passphrase)
+    http_server = create_http_server(shared_path, passphrase)
     http_server.run(host="0.0.0.0", port=http_port)
+
+if __name__ == "__main__":
+    main()
