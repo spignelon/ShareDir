@@ -31,7 +31,7 @@ ShareDir allows you to share a file or directory over LAN or internet using a si
 ### Basic Usage
 
 ```bash
-python share_dir.py /path/to/file/or/directory
+python sharedir.py /path/to/file/or/directory
 ```
 
 This will start a local HTTP server that serves the specified file or directory. The server will display a shareable URL and a QR code for quick access.
@@ -46,7 +46,7 @@ This will start a local HTTP server that serves the specified file or directory.
 To share a directory named `movies` with a passphrase of 6 words:
 
 ```bash
-python share_dir.py ~/movies -p 6
+python sharedir.py ~/movies -p 6
 ```
 
 This will output something like:
