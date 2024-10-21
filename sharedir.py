@@ -1,11 +1,18 @@
 import os
 import socket
 import qrcode
-from flask import Flask, send_file, send_from_directory, request, abort, jsonify, render_template_string
+from flask import (
+    Flask,
+    send_file,
+    send_from_directory,
+    request,
+    abort,
+    jsonify,
+    render_template_string,
+)
 import diceware
 from argparse import ArgumentParser, Namespace
 from time import time
-from datetime import timedelta
 
 # Dictionary to store failed attempts
 failed_attempts = {}
@@ -16,20 +23,22 @@ MAX_FAILED_ATTEMPTS = 10
 TIME_WINDOW = 60  # 1 minute
 BLACKLIST_DURATION = 4 * 60 * 60  # 4 hours in seconds
 
+
 def generate_passphrase(num_words):
     # Create an options object
     options = Namespace()
     options.num = num_words
-    options.delimiter = '-'
+    options.delimiter = "-"
     options.specials = False
-    options.caps = False    
+    options.caps = False
     options.randomsource = "system"
     options.infile = None
-    options.wordlist = ['en']       
+    options.wordlist = ["en"]
 
     # Generate the passphrase
-    passphrase = diceware.get_passphrase(options)   
+    passphrase = diceware.get_passphrase(options)
     return passphrase
+
 
 def get_lan_ip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -43,6 +52,7 @@ def get_lan_ip():
         s.close()
     return ip
 
+
 # checking if IP is blacklisted and removing old entries
 def is_blacklisted(ip):
     if ip in blacklist:
@@ -52,15 +62,18 @@ def is_blacklisted(ip):
             del blacklist[ip]
     return False
 
+
 def log_failed_attempt(ip):
     # Log failed attempt with a timestamp
     now = time()
     if ip not in failed_attempts:
         failed_attempts[ip] = []
-    
+
     # Removing old entries
-    failed_attempts[ip] = [attempt for attempt in failed_attempts[ip] if now - attempt < TIME_WINDOW]
-    
+    failed_attempts[ip] = [
+        attempt for attempt in failed_attempts[ip] if now - attempt < TIME_WINDOW
+    ]
+
     # Add current attempt
     failed_attempts[ip].append(now)
 
@@ -73,19 +86,26 @@ def create_http_server(path, passphrase):
     app = Flask(__name__)
     is_file = os.path.isfile(path)
 
-    @app.route('/', defaults={'req_path': ''})
-    @app.route('/<path:req_path>')
+    @app.route("/", defaults={"req_path": ""})
+    @app.route("/<path:req_path>")
     def dir_listing(req_path):
-        ip = request.remote_addr    
-        
+        ip = request.remote_addr
+
         if is_blacklisted(ip):
             print(f"IP {ip} is blacklisted.")
-            return jsonify({"error": "Too many failed attempts. You are blacklisted for 4 hours."}), 403
-        
-        if request.args.get('passphrase') != passphrase:
-            if request.args.get('passphrase') is not None:
+            return jsonify({
+                "error": "Too many failed attempts. You are blacklisted for 4 hours."
+            }), 403
+
+        if request.args.get("passphrase") != passphrase:
+            if request.args.get("passphrase") is not None:
                 log_failed_attempt(ip)
-                print("Incorrect passphrase. The correct passphrase is:", passphrase, "AND NOT", request.args.get('passphrase'))
+                print(
+                    "Incorrect passphrase. The correct passphrase is:",
+                    passphrase,
+                    "AND NOT",
+                    request.args.get("passphrase"),
+                )
             abort(403)
 
         if is_file:
@@ -101,13 +121,17 @@ def create_http_server(path, passphrase):
             if os.path.isfile(abs_path):
                 return send_from_directory(path, req_path)
 
-
         # Split files and directories into separate lists
         items = os.listdir(abs_path)
-        directories = sorted([item for item in items if os.path.isdir(os.path.join(abs_path, item))])
-        files = sorted([item for item in items if os.path.isfile(os.path.join(abs_path, item))])
+        directories = sorted([
+            item for item in items if os.path.isdir(os.path.join(abs_path, item))
+        ])
+        files = sorted([
+            item for item in items if os.path.isfile(os.path.join(abs_path, item))
+        ])
 
-        return render_template_string("""
+        return render_template_string(
+            """
         <!DOCTYPE html>
         <html lang="en">
         <head>
@@ -228,9 +252,15 @@ def create_http_server(path, passphrase):
             </script>
         </body>
         </html>
-        """, req_path=req_path, directories=directories, files=files, passphrase=passphrase)
+        """,
+            req_path=req_path,
+            directories=directories,
+            files=files,
+            passphrase=passphrase,
+        )
 
     return app
+
 
 def display_qr_code(url):
     qr = qrcode.QRCode(
@@ -242,15 +272,25 @@ def display_qr_code(url):
     qr.add_data(url)
     qr.make(fit=True)
 
-    img = qr.make_image(fill='black', back_color='white')
+    # img = qr.make_image(fill="black", back_color="white")
     qr.print_ascii()
+
 
 def main():
     parser = ArgumentParser(description="Share a directory or file over HTTP.")
-    parser.add_argument("path", help="Path to the directory or file to be shared (relative or absolute).")
-    parser.add_argument("-p", "--passphrase-length", type=int, default=4, help="Number of words in the passphrase (default: 4).")
+    parser.add_argument(
+        "path",
+        help="Path to the directory or file to be shared (relative or absolute).",
+    )
+    parser.add_argument(
+        "-p",
+        "--passphrase-length",
+        type=int,
+        default=4,
+        help="Number of words in the passphrase (default: 4).",
+    )
     args = parser.parse_args()
-    
+
     # Resolving absolute path
     shared_path = os.path.abspath(args.path)
     if not os.path.exists(shared_path):
@@ -271,6 +311,7 @@ def main():
     # Create and start the HTTP server
     http_server = create_http_server(shared_path, passphrase)
     http_server.run(host="0.0.0.0", port=http_port)
+
 
 if __name__ == "__main__":
     main()
