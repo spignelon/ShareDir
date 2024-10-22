@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='sharedir',
-    version='1.0',
+    version='1.0.1',
     description='A simple tool to share files and directories over LAN or internet.',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
@@ -34,10 +34,16 @@ setup(
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: GNU Affero General Public License v3',
         'Operating System :: OS Independent',
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'Intended Audience :: End Users/Desktop',
         'Topic :: Utilities',
+        'Topic :: Communications :: File Sharing',
     ],
     python_requires='>=3.6',
+    project_urls={  # Additional project links to provide more context
+        'Homepage': 'https://github.com/spignelon/ShareDir',
+        'Bug Tracker': 'https://github.com/spignelon/ShareDir/issues',
+        'Source Code': 'https://github.com/spignelon/ShareDir/blob/main/sharedir/sharedir.py',
+    },
 )
