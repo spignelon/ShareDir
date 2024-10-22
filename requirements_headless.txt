@@ -1,0 +1,12 @@
+blinker
+click
+diceware
+Flask
+itsdangerous
+Jinja2
+MarkupSafe
+pypng
+qrcode
+setuptools
+typing_extensions
+Werkzeug
