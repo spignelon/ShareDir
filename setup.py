@@ -17,7 +17,7 @@ setup(
         'diceware==0.10',
         'Flask==3.0.3',
         'itsdangerous==2.2.0',
-        'Jinja2==3.1.4',
+        'Jinja2==3.1.5',
         'MarkupSafe==2.1.5',
         'pypng==0.20220715.0',
         'qrcode==7.4.2',
