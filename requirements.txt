@@ -10,17 +10,13 @@ Flask==3.0.3
 id==1.5.0
 idna==3.10
 itsdangerous==2.2.0
-<<<<<<< HEAD
-Jinja2==3.1.6
-=======
 jaraco.classes==3.4.0
 jaraco.context==6.0.1
 jaraco.functools==4.1.0
 jeepney==0.9.0
-Jinja2==3.1.4
+Jinja2==3.1.6
 keyring==25.6.0
 markdown-it-py==3.0.0
->>>>>>> 9d98b97 (bump version)
 MarkupSafe==2.1.5
 mdurl==0.1.2
 more-itertools==10.6.0
@@ -39,10 +35,6 @@ SecretStorage==3.3.3
 setuptools==75.1.0
 twine==6.1.0
 typing_extensions==4.12.2
-<<<<<<< HEAD
-Werkzeug==3.0.6
-=======
 urllib3==2.3.0
-Werkzeug==3.0.4
+Werkzeug==3.0.6
 wheel==0.45.1
->>>>>>> 9d98b97 (bump version)
