@@ -21,7 +21,7 @@ setup(
         'MarkupSafe==2.1.5',
         'pypng==0.20220715.0',
         'qrcode==7.4.2',
-        'setuptools==75.1.0',
+        'setuptools==78.1.1',
         'typing_extensions==4.12.2',
         'Werkzeug==3.0.6'
     ],
