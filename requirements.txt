@@ -32,7 +32,7 @@ requests-toolbelt==1.0.0
 rfc3986==2.0.0
 rich==13.9.4
 SecretStorage==3.3.3
-setuptools==75.1.0
+setuptools==78.1.1
 twine==6.1.0
 typing_extensions==4.12.2
 urllib3==2.3.0
