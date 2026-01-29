@@ -23,7 +23,7 @@ setup(
         'qrcode==7.4.2',
         'setuptools==78.1.1',
         'typing_extensions==4.12.2',
-        'Werkzeug==3.0.6'
+        'Werkzeug==3.1.5'
     ],
     entry_points={
         'console_scripts': [
