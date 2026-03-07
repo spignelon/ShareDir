@@ -77,5 +77,5 @@ Requires Python >= 3.10.
 
 ## License
 
+[![GNU AGPLv3.0](https://www.gnu.org/graphics/agplv3-155x51.png)](https://www.gnu.org/licenses/agpl-3.0.html) <br>
 [GNU AGPLv3.0](LICENSE)
-[![GNU AGPLv3.0](https://www.gnu.org/graphics/agplv3-155x51.png)](https://www.gnu.org/licenses/agpl-3.0.html)
