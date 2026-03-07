@@ -6,7 +6,9 @@ itsdangerous
 Jinja2
 MarkupSafe
 pypng
+python-magic
 qrcode
 setuptools
 typing_extensions
+waitress
 Werkzeug

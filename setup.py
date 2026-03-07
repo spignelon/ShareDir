@@ -1,8 +1,16 @@
 from setuptools import setup, find_packages
+import os
+
+
+def read_requirements():
+    req_file = os.path.join(os.path.dirname(__file__), "requirements_headless.txt")
+    with open(req_file) as f:
+        return [line.strip() for line in f if line.strip() and not line.startswith("#")]
+
 
 setup(
     name='sharedir',
-    version='1.0.2',
+    version='2.0.0',
     description='A simple tool to share files and directories over LAN or internet.',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
@@ -11,20 +19,7 @@ setup(
     url='https://github.com/spignelon/ShareDir',
     license='AGPL-3.0',
     packages=find_packages(),
-    install_requires=[
-        'blinker==1.8.2',
-        'click==8.1.7',
-        'diceware==0.10',
-        'Flask==3.0.3',
-        'itsdangerous==2.2.0',
-        'Jinja2==3.1.6',
-        'MarkupSafe==2.1.5',
-        'pypng==0.20220715.0',
-        'qrcode==7.4.2',
-        'setuptools==78.1.1',
-        'typing_extensions==4.12.2',
-        'Werkzeug==3.1.5'
-    ],
+    install_requires=read_requirements(),
     entry_points={
         'console_scripts': [
             'sharedir = sharedir.sharedir:main',
@@ -32,6 +27,10 @@ setup(
     },
     classifiers=[
         'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
+        'Programming Language :: Python :: 3.13',
         'License :: OSI Approved :: GNU Affero General Public License v3',
         'Operating System :: OS Independent',
         'Development Status :: 5 - Production/Stable',
@@ -40,8 +39,8 @@ setup(
         'Topic :: Utilities',
         'Topic :: Communications :: File Sharing',
     ],
-    python_requires='>=3.6',
-    project_urls={  # Additional project links to provide more context
+    python_requires='>=3.10',
+    project_urls={
         'Homepage': 'https://github.com/spignelon/ShareDir',
         'Bug Tracker': 'https://github.com/spignelon/ShareDir/issues',
         'Source Code': 'https://github.com/spignelon/ShareDir/blob/main/sharedir/sharedir.py',
