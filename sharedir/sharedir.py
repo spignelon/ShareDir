@@ -680,7 +680,7 @@ def main():
         "--workers",
         type=int,
         default=1,
-        help="Number of server workers (default: 2).",
+        help="Number of server workers (default: 1).",
     )
     parser.add_argument(
         "--upload",

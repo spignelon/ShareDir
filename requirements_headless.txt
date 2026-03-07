@@ -3,7 +3,8 @@ Flask
 Jinja2
 MarkupSafe
 python-magic
-qrcode
+pypng
+qrcode[pure]
 waitress
 Werkzeug
 xkcdpass
