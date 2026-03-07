@@ -1,0 +1,3 @@
+include requirements_headless.txt
+include LICENSE
+include requirements.txt

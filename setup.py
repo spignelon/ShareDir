@@ -3,7 +3,7 @@ import os
 
 
 def read_requirements():
-    req_file = os.path.join(os.path.dirname(__file__), "requirements.txt")
+    req_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "requirements_headless.txt")
     with open(req_file) as f:
         return [line.strip() for line in f if line.strip() and not line.startswith("#")]
 
@@ -17,7 +17,7 @@ setup(
     author='Ujjawal Saini',
     author_email='spignelon@proton.me',
     url='https://github.com/spignelon/ShareDir',
-    license='AGPL-3.0',
+    license='AGPL-3.0-only',
     packages=find_packages(),
     install_requires=read_requirements(),
     entry_points={
@@ -31,7 +31,6 @@ setup(
         'Programming Language :: Python :: 3.11',
         'Programming Language :: Python :: 3.12',
         'Programming Language :: Python :: 3.13',
-        'License :: OSI Approved :: GNU Affero General Public License v3',
         'Operating System :: OS Independent',
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
