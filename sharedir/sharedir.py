@@ -13,6 +13,7 @@ from flask import (
 import diceware
 from argparse import ArgumentParser, Namespace
 from time import time
+from urllib.parse import quote
 
 # Dictionary to store failed attempts
 failed_attempts = {}
@@ -86,6 +87,10 @@ def create_http_server(path, passphrase):
     app = Flask(__name__)
     is_file = os.path.isfile(path)
 
+    app.jinja_env.filters['encode_path'] = lambda p: '/'.join(
+        quote(segment, safe='') for segment in p.split('/')
+    )
+
     @app.route("/", defaults={"req_path": ""})
     @app.route("/<path:req_path>")
     def dir_listing(req_path):
@@ -97,16 +102,17 @@ def create_http_server(path, passphrase):
                 "error": "Too many failed attempts. You are blacklisted for 4 hours."
             }), 403
 
-        if request.args.get("passphrase") != passphrase:
-            if request.args.get("passphrase") is not None:
-                log_failed_attempt(ip)
-                print(
-                    "Incorrect passphrase. The correct passphrase is:",
-                    passphrase,
-                    "AND NOT",
-                    request.args.get("passphrase"),
-                )
-            abort(403)
+        if passphrase is not None:
+            if request.args.get("passphrase") != passphrase:
+                if request.args.get("passphrase") is not None:
+                    log_failed_attempt(ip)
+                    print(
+                        "Incorrect passphrase. The correct passphrase is:",
+                        passphrase,
+                        "AND NOT",
+                        request.args.get("passphrase"),
+                    )
+                abort(403)
 
         if is_file:
             # Serve the single file
@@ -116,6 +122,11 @@ def create_http_server(path, passphrase):
         else:
             # Serve the directory listing
             abs_path = os.path.join(path, req_path)
+            # Security: prevent path traversal attacks
+            real_shared = os.path.realpath(path)
+            real_abs = os.path.realpath(abs_path)
+            if not (real_abs == real_shared or real_abs.startswith(real_shared + os.sep)):
+                return jsonify({"error": "Access denied"}), 403
             if not os.path.exists(abs_path):
                 return jsonify({"error": "Path not found"}), 404
             if os.path.isfile(abs_path):
@@ -129,6 +140,7 @@ def create_http_server(path, passphrase):
         files = sorted([
             item for item in items if os.path.isfile(os.path.join(abs_path, item))
         ])
+        passphrase_param = f"?passphrase={passphrase}" if passphrase is not None else ""
 
         return render_template_string(
             """
@@ -215,7 +227,7 @@ def create_http_server(path, passphrase):
                 {% for directory in directories %}
                     <li>
                         <span class="icon">📁</span>
-                        <a class="folder" href="{{ '/' + req_path + '/' + directory if req_path else '/' + directory }}?passphrase={{ passphrase }}">{{ directory }}</a>
+                        <a class="folder" href="{{ ('/' + req_path + '/' + directory if req_path else '/' + directory) | encode_path }}{{ passphrase_param }}">{{ directory }}</a>
                     </li>
                 {% endfor %}
                 
@@ -223,7 +235,7 @@ def create_http_server(path, passphrase):
                 {% for file in files %}
                     <li>
                         <span class="icon">📄</span>
-                        <a class="file" href="{{ '/' + req_path + '/' + file if req_path else '/' + file }}?passphrase={{ passphrase }}">{{ file }}</a>
+                        <a class="file" href="{{ ('/' + req_path + '/' + file if req_path else '/' + file) | encode_path }}{{ passphrase_param }}">{{ file }}</a>
                     </li>
                 {% endfor %}
             </ul>
@@ -257,6 +269,7 @@ def create_http_server(path, passphrase):
             directories=directories,
             files=files,
             passphrase=passphrase,
+            passphrase_param=passphrase_param,
         )
 
     return app
@@ -289,6 +302,18 @@ def main():
         default=4,
         help="Number of words in the passphrase (default: 4).",
     )
+    parser.add_argument(
+        "--no-passphrase",
+        action="store_true",
+        help="Disable passphrase protection (not recommended on public networks).",
+    )
+    parser.add_argument(
+        "-P",
+        "--port",
+        type=int,
+        default=44447,
+        help="Port to run the HTTP server on (default: 44447).",
+    )
     args = parser.parse_args()
 
     # Resolving absolute path
@@ -297,20 +322,27 @@ def main():
         print(f"The provided path '{shared_path}' does not exist.")
         exit(1)
 
-    passphrase = generate_passphrase(args.passphrase_length)
-    print(f"Generated passphrase: {passphrase}")
+    if args.no_passphrase:
+        passphrase = None
+        print("Passphrase protection disabled.")
+    else:
+        passphrase = generate_passphrase(args.passphrase_length)
+        print(f"Generated passphrase: {passphrase}")
 
-    ip_address = get_lan_ip()  # Detect LAN IP address
-    http_port = 44447
-    url = f"http://{ip_address}:{http_port}/?passphrase={passphrase}"
+    ip_address = get_lan_ip()
+    http_port = args.port
+    if passphrase is not None:
+        url = f"http://{ip_address}:{http_port}/?passphrase={passphrase}"
+    else:
+        url = f"http://{ip_address}:{http_port}/"
     print(f"Access URL: {url}")
 
-    # Display the QR codel
+    # Display the QR code
     display_qr_code(url)
 
     # Create and start the HTTP server
     http_server = create_http_server(shared_path, passphrase)
-    http_server.run(host="0.0.0.0", port=http_port)
+    http_server.run(host="0.0.0.0", port=http_port, threaded=True)
 
 
 if __name__ == "__main__":
