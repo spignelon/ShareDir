@@ -2,7 +2,6 @@ click
 Flask
 Jinja2
 MarkupSafe
-python-magic
 pypng
 qrcode[pure]
 waitress

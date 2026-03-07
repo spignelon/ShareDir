@@ -6,7 +6,6 @@ import zipfile
 import base64
 import mimetypes
 import threading
-import magic
 import qrcode
 from datetime import datetime, timezone
 from flask import (
@@ -94,9 +93,8 @@ def get_file_info(filepath):
     mtime = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).strftime(
         "%Y-%m-%d %H:%M"
     )
-    try:
-        mime = magic.from_file(filepath, mime=True)
-    except Exception:
+    mime, _ = mimetypes.guess_type(filepath)
+    if not mime:
         mime = "application/octet-stream"
     return {"size": size, "mtime": mtime, "mime": mime}
 
@@ -135,12 +133,9 @@ def serve_file_with_range(filepath):
     file_size = os.path.getsize(filepath)
     range_header = request.headers.get("Range")
 
-    try:
-        mime = magic.from_file(filepath, mime=True)
-    except Exception:
-        mime, _ = mimetypes.guess_type(filepath)
-        if not mime:
-            mime = "application/octet-stream"
+    mime, _ = mimetypes.guess_type(filepath)
+    if not mime:
+        mime = "application/octet-stream"
 
     if range_header:
         # Parse range header: bytes=start-end
