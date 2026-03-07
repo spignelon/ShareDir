@@ -1,14 +1,9 @@
-blinker
 click
-diceware
 Flask
-itsdangerous
 Jinja2
 MarkupSafe
-pypng
 python-magic
 qrcode
-setuptools
-typing_extensions
 waitress
 Werkzeug
+xkcdpass

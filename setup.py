@@ -3,7 +3,7 @@ import os
 
 
 def read_requirements():
-    req_file = os.path.join(os.path.dirname(__file__), "requirements_headless.txt")
+    req_file = os.path.join(os.path.dirname(__file__), "requirements.txt")
     with open(req_file) as f:
         return [line.strip() for line in f if line.strip() and not line.startswith("#")]
 

@@ -5,8 +5,6 @@ import socket
 import zipfile
 import base64
 import mimetypes
-import signal
-import sys
 import threading
 import magic
 import qrcode
@@ -14,7 +12,6 @@ from datetime import datetime, timezone
 from flask import (
     Flask,
     send_file,
-    send_from_directory,
     request,
     abort,
     jsonify,
@@ -23,8 +20,8 @@ from flask import (
     Response,
     make_response,
 )
-import diceware
-from argparse import ArgumentParser, Namespace
+from xkcdpass import xkcd_password as xp
+from argparse import ArgumentParser
 from time import time
 from urllib.parse import quote
 from werkzeug.utils import secure_filename
@@ -44,16 +41,9 @@ server_expire_seconds = None
 
 
 def generate_passphrase(num_words):
-    options = Namespace()
-    options.num = num_words
-    options.delimiter = "-"
-    options.specials = False
-    options.caps = False
-    options.randomsource = "system"
-    options.infile = None
-    options.wordlist = ["en"]
-    passphrase = diceware.get_passphrase(options)
-    return passphrase
+    wordfile = xp.locate_wordfile()
+    words = xp.generate_wordlist(wordfile=wordfile, min_length=3, max_length=8)
+    return xp.generate_xkcdpassword(words, numwords=num_words, delimiter="-")
 
 
 def get_lan_ip():
@@ -120,7 +110,8 @@ def generate_qr_base64(data):
     )
     qr.add_data(data)
     qr.make(fit=True)
-    img = qr.make_image(fill="black", back_color="white")
+    from qrcode.image.pure import PyPNGImage
+    img = qr.make_image(image_factory=PyPNGImage)
     buf = io.BytesIO()
     img.save(buf)
     return base64.b64encode(buf.getvalue()).decode("ascii")
@@ -392,21 +383,13 @@ QR_TEMPLATE = """
     a { color: #58a6ff; }
     .light-mode a { color: #2980b9; }
     .back { margin-top: 20px; font-size: 15px; }
-    .copy-btn { background: #58a6ff; color: #000; border: none; padding: 8px 16px;
-                border-radius: 6px; cursor: pointer; font-size: 13px; margin-top: 8px; }
-    .copy-btn:hover { background: #79b8ff; }
-    .light-mode .copy-btn { background: #3498db; color: #fff; }
 </style>
 </head>
 <body>
 <script>if(localStorage.getItem('dark-mode')!=='disabled'){}else{document.body.classList.add('light-mode');}</script>
 <h1>Scan to Access</h1>
 <img src="data:image/png;base64,{{ qr_b64 }}" alt="QR Code">
-<div class="url-box">
-    <a href="{{ url }}">{{ url }}</a>
-    <br>
-    <button class="copy-btn" onclick="navigator.clipboard.writeText('{{ url }}').then(()=>{this.textContent='Copied!';setTimeout(()=>{this.textContent='📋 Copy URL'},1500)})">📋 Copy URL</button>
-</div>
+<div class="url-box"><a href="{{ url }}">{{ url }}</a></div>
 <a class="back" href="/{{ passphrase_param }}">← Back to files</a>
 </body>
 </html>
